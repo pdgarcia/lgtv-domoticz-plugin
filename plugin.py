@@ -54,10 +54,10 @@ class BasePlugin:
 
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = p.communicate()
-        
+
         out = out.decode("utf-8")
         err = err.decode("utf-8")
-        
+
         #Domoticz.Debug(str(p.returncode))
         #Domoticz.Debug(out)
         #Domoticz.Debug(err)
@@ -67,23 +67,23 @@ class BasePlugin:
             return str(err)
         else:
             return str(out)
-    
+
     # Executed once at reboot/update, can create up to 255 devices
     def onStart(self):
         global _tv
-        
+
         if Parameters["Mode6"] == "Debug": 
             Domoticz.Debugging(1)
             self.debug = True
 
         #TODO: get number of inputs and apps to build list
-        
+
         self.SourceOptions3 =   {   "LevelActions"  : "||||||", 
                                     "LevelNames"    : "Off|TV|HDMI1|HDMI2|HDMI3|Hulu|Netflix",
                                     "LevelOffHidden": "true",
                                     "SelectorStyle" : "0"
                                 }
-                                    
+
         if (len(Devices) == 0):
             Domoticz.Device(Name="Status", Unit=1, Type=17, Image=2, Switchtype=17).Create()
             if Parameters["Mode3"] == "Volume": Domoticz.Device(Name="Volume", Unit=2, Type=244, Subtype=73, Switchtype=7, Image=8).Create()
@@ -105,7 +105,7 @@ class BasePlugin:
             if (1 in Devices): self.tvState = Devices[1].nValue    #--> of sValue
             if (2 in Devices): self.tvVolume = Devices[2].nValue   #--> of sValue
             if (3 in Devices): self.tvSource = Devices[3].sValue
-        
+
         # Set update interval, values below 10 seconds are not allowed due to timeout of 5 seconds in bravia.py script
         updateInterval = int(Parameters["Mode5"])
         if updateInterval < 30:
@@ -130,12 +130,12 @@ class BasePlugin:
             Domoticz.Debug("Failed to connect ("+str(Status)+") to: "+Parameters["Address"]+" with error: "+Description)
             self.SyncDevices()
         return
-    
+
     # Called when a single,complete message is received from the external hardware
     def onMessage(self, Data, Status, Extra):
         Domoticz.Log('onMessage: '+str(Data)+" ,"+str(Status)+" ,"+str(Extra))    
         return True
-    
+
     # Executed each time we click on device through Domoticz GUI
     def onCommand(self, Unit, Command, Level, Hue):
         Domoticz.Log("onCommand called for Unit " + str(Unit) + ": Parameter '" + str(Command) + "', Level: " + str(Level))
@@ -144,7 +144,7 @@ class BasePlugin:
         action, sep, params = Command.partition(' ')
         action = action.capitalize()
         params = params.capitalize()
-       
+
         if self.powerOn == False:
             if Unit == 1:     # TV power switch
                 if action == "On":
@@ -162,7 +162,7 @@ class BasePlugin:
                     self.tvPlaying = "Off"
                     self.SyncDevices()
 
-                
+
                 # Remote buttons (action is capitalized so chosen for Command)
                 elif Command == "ChannelUp": self.run("channel-up") #_tv.send_req_ircc("AAAAAQAAAAEAAAAQAw==")       # ChannelUp
                 elif Command == "ChannelDown": self.run("channel-down") #_tv.send_req_ircc("AAAAAQAAAAEAAAARAw==")     # ChannelDown
@@ -187,7 +187,7 @@ class BasePlugin:
                 elif Command == "PlayPause": self.run("pause") #_tv.send_req_ircc("AAAAAgAAABoAAABnAw==")       # TV pause
                 elif Command == "FastForward": self.run("fast-forward") #_tv.send_req_ircc("AAAAAgAAAJcAAAAcAw==")     # Forward
                 elif Command == "BigStepForward": self.run("play") #_tv.send_req_ircc("AAAAAgAAAJcAAAAaAw==")  # Play
-                
+
             if Unit == 2:     # TV volume
                 if action == 'Set': #--> and (params.capitalize() == 'Level') or (Command.lower() == 'Volume')
                     max = int(Parameters["Mode1"])
@@ -205,7 +205,7 @@ class BasePlugin:
                     #_tv.mute_volume()
                     self.run("unmute")
                     UpdateDevice(2, 1, str(self.tvVolume))
-                    
+
             if Unit == 3:   # TV source
                 if Command == 'Set Level':
                     if Level == 10:
@@ -241,12 +241,12 @@ class BasePlugin:
         self.isConnected = False
         Domoticz.Log("LG TV has disconnected.")
         return
-        
+
     # Executed once when HW updated/removed
     def onStop(self):
         Domoticz.Log("onStop called")
         return True
-    
+
     # Execution depend of Domoticz.Heartbeat(x) x in seconds
     def onHeartbeat(self):
         tvStatus = ''
@@ -291,16 +291,16 @@ class BasePlugin:
                 if Parameters["Mode3"] == "Volume": UpdateDevice(2, 2, str(self.tvVolume))
 
         return
-    
+
     def ClearDevices(self):
         self.tvPlaying = "Off"
         UpdateDevice(1, 0, self.tvPlaying)          #Status
         if Parameters["Mode3"] == "Volume": UpdateDevice(2, 0, str(self.tvVolume))  #Volume
         self.tvSource = 0
         UpdateDevice(3, 0, str(self.tvSource))      #Source
-        
+
         return
-    
+
     def GetTVInfo(self):
         currentApp = str(self.run("current-app")).rstrip()
         currentInput = str(self.run("get-input")).rstrip()
@@ -370,11 +370,11 @@ class BasePlugin:
             mute_level = 2
             if mute == "True":
                 mute_level = 0
-            
+
             Domoticz.Debug("vol: " + str(output))
             self.tvVolume = int(output)
             if self.tvVolume != None: UpdateDevice(2, mute_level, str(self.tvVolume))
-                
+
         return
 
 _plugin = BasePlugin()
